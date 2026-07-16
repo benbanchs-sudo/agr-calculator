@@ -124,6 +124,16 @@ footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 4px;font-si
 #printDoc .fineprint h3{font-size:7pt;margin:0 0 2pt;color:#333}
 #printDoc .fineprint p{margin:1.5pt 0}
 #printDoc .fineprint u{text-decoration:none;font-weight:700}
+#printDoc .threePaths{font-size:8pt;padding:6pt 8pt}
+#printDoc .threePaths h3{font-size:9.5pt;margin-bottom:3pt}
+#printDoc .threePaths .pathrow{margin-bottom:3pt}
+#printDoc .threePaths .pathrow svg{width:16px;height:16px}
+#printDoc .pPage.tall>.callout{min-height:8.7in}
+#printDoc .fineMethod{font-size:6.6pt;line-height:1.34}
+#printDoc .fineMethod .pBandTitle{font-size:8pt;margin:0 0 3pt}
+#printDoc .fineMethod .inner,#printDoc .fineMethod p{font-size:6.6pt;margin:1.5pt 0}
+#printDoc .fineMethod li{margin:0 0 2pt 12pt;font-size:6.6pt}
+#printDoc .fineMethod .noteItem{font-size:6.4pt;margin:0 0 2pt}
 .hide{display:none}
 #results{scroll-margin-top:10px}
 button{background:linear-gradient(135deg,#1F4E79,#3f7fb5);color:#fff;border:0;border-radius:9px;padding:12px 28px;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(31,78,121,.3);transition:transform .12s,box-shadow .12s}
@@ -1007,47 +1017,48 @@ function buildPrintDoc(){
   const harvest=(root,label)=>{root.querySelectorAll('.plain,.hint').forEach(el=>{
     if(el.classList.contains('rotHint')){el.remove();return;}
     const t=el.textContent.replace(/\s+/g,' ').trim(); if(!t){el.remove();return;}
-    notes.push('['+nn+'] '+(label?label+' — ':'')+t);
+    notes.push('['+nn+'] '+(label?label+' \u2014 ':'')+t);
     el.replaceWith(mk('noteRef','see end note ['+nn+']')); nn++; });};
-  // ---- page 1: title, bottom line, fine print pinned at foot ----
+  // ---- PAGE 1: title, bottom line, three paths, read-first fine print footer ----
   const p1=mk('pPage first');
   p1.appendChild(mk('pTitle',"Technician vs. AGR: The Math They Don't Want You to Know"));
-  p1.appendChild(mk('pSub','LIUNA Local 1776 · calculator.local1776.org · printed '+new Date().toLocaleDateString()));
+  p1.appendChild(mk('pSub','LIUNA Local 1776 \u00b7 calculator.local1776.org \u00b7 printed '+new Date().toLocaleDateString()));
   const hd=cloneById('headline'); harvest(hd,'The Bottom Line'); p1.appendChild(hd);
+  const rp=cloneById('reality'); harvest(rp,'Three Paths'); rp.classList.add('threePaths'); p1.appendChild(rp);
   const rf=cloneById('readFirst'); rf.className='fineprint'; rf.removeAttribute('style');
   rf.querySelectorAll('.ack,input').forEach(x=>x.remove()); p1.appendChild(rf);
-  // ---- landscape band pages for the three cards ----
-  const bandA=mk('landPage'), gA=mk('pcols'), bandB=mk('landPage'), gB=mk('pcols');
+  // ---- PAGE 2: ONE landscape page, all three sections per column ----
+  const band=mk('landPage'), g=mk('pcols');
   document.querySelectorAll('.cols .col').forEach(col=>{
     const name=(col.querySelector('.colhead b')||{}).textContent||'';
     const secs=[...col.querySelectorAll('.sec')];
-    const mkcol=list=>{const pc=mk('pcol'); const ch=col.querySelector('.colhead');
-      if(ch) pc.appendChild(stripIds(ch.cloneNode(true)));
-      list.forEach(s=>{ if(!s) return; const cs=stripIds(s.cloneNode(true));
-        cs.style.minHeight=''; cs.querySelectorAll('[style]').forEach(x=>{x.style.minHeight='';});
-        harvest(cs,name); pc.appendChild(cs); });
-      return pc;};
-    // capture the standalone note bands (indices 1 and 4) as end notes without printing them
+    // note-band sections (1 & 4) -> end notes, not printed inline
     [1,4].forEach(i=>{const s=secs[i]; if(!s) return;
       s.querySelectorAll('.plain,.hint').forEach(el=>{const t=el.textContent.replace(/\s+/g,' ').trim();
-        if(t){notes.push('['+nn+'] '+name+' — '+t); nn++;}});});
-    gA.appendChild(mkcol([secs[0]]));
-    gB.appendChild(mkcol([secs[2],secs[3]]));
+        if(t){notes.push('['+nn+'] '+name+' \u2014 '+t); nn++;}});});
+    const pc=mk('pcol'); const ch=col.querySelector('.colhead');
+    if(ch) pc.appendChild(stripIds(ch.cloneNode(true)));
+    [secs[0],secs[2],secs[3]].forEach(s=>{ if(!s) return; const cs=stripIds(s.cloneNode(true));
+      cs.style.minHeight=''; cs.querySelectorAll('[style]').forEach(x=>{x.style.minHeight='';});
+      harvest(cs,name); pc.appendChild(cs); });
+    g.appendChild(pc);
   });
-  bandA.appendChild(mk('pBandTitle','Side by Side — Your Pay (page 1 of 2)')); bandA.appendChild(gA);
-  bandB.appendChild(mk('pBandTitle','Side by Side — Your Bank Account & What the Government Adds (page 2 of 2)')); bandB.appendChild(gB);
-  // ---- portrait card pages ----
-  const pc=mk('pPage'); pc.appendChild(cloneById('cardCareer'));
-  const pr=mk('pPage'); pr.appendChild(cloneById('cardRetire'));
-  const px=mk('pPage'); px.appendChild(cloneById('reality')); px.appendChild(cloneById('cardGiveup'));
-  // ---- methodology + end notes ----
-  const pe=mk('pPage');
-  pe.appendChild(mk('pBandTitle','Where These Numbers Come From (Methodology, Sources & Assumptions)'));
+  band.appendChild(mk('pBandTitle','Side by Side \u2014 Your Pay, Your Bank Account &amp; What the Government Adds'));
+  band.appendChild(g);
+  // ---- PAGE 3: Your Career (tall, fills page) ----
+  const pc=mk('pPage tall'); pc.appendChild(cloneById('cardCareer'));
+  // ---- PAGE 4: Retirement (tall, fills page) ----
+  const pr=mk('pPage tall'); pr.appendChild(cloneById('cardRetire'));
+  // ---- PAGE 5: What You Give Up ----
+  const px=mk('pPage'); px.appendChild(cloneById('cardGiveup'));
+  // ---- PAGE 6+: methodology + end notes, all fine print ----
+  const pe=mk('pPage fineMethod');
+  pe.appendChild(mk('pBandTitle','Where These Numbers Come From (Methodology, Sources &amp; Assumptions)'));
   pe.appendChild(stripIds(document.getElementById('method').cloneNode(true)));
   pe.appendChild(mk('pBandTitle','End Notes'));
   notes.forEach(t=>pe.appendChild(mk('noteItem',t)));
   const root=document.createElement('div'); root.id='printDoc';
-  [p1,bandA,bandB,pc,pr,px,pe].forEach(x=>root.appendChild(x));
+  [p1,band,pc,pr,px,pe].forEach(x=>root.appendChild(x));
   return root;
 }
 function alignPrintRows(doc){
